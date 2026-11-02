@@ -1,31 +1,46 @@
 # Switchyard
 
-Switchyard is a Python project for building an LLM routing layer that can choose the best model for a task based on cost, quality, and latency. The codebase currently focuses on the model registry and validation layer that a router will eventually use.
+Switchyard is a Python-based model routing foundation for LLM applications. It is designed to route requests to the most cost-effective model that can handle a given task while keeping pricing, routing decisions, and model metadata explicit and maintainable.
 
-The core idea is simple: keep model metadata, pricing, and validation in one place so application code can route by abstract tiers such as `tier1`, `tier2`, and `tier3` instead of hard-coding provider-specific model names.
+At its current stage, the project focuses on the model registry and validation layer—the core building blocks needed before a full router, evaluator, or gateway is added.
 
-## Why Switchyard?
+## Why this project exists
 
-Most LLM spending is driven by defaulting every request to a premium model, even when a smaller or cheaper model could handle the task. Switchyard is designed to make that tradeoff explicit and measurable.
+Most LLM systems default every request to a single premium model. That is simple, but it is rarely the cheapest or most efficient approach. Switchyard is built around the idea that model selection should be data-driven, measured, and transparent.
 
-The project aims to support:
+The long-term goal is to support:
 
-- cost-aware model routing
-- tier-based decision making
-- provider-agnostic model configuration
-- transparent pricing metadata
-- future expansion into routing policies and evaluation logic
+- task-aware routing by tier
+- cost-aware model selection
+- provider-neutral configuration
+- observability around price/performance tradeoffs
+- future quality checks, escalation logic, and routing policies
 
-## Current state
+## Current implementation
 
-This repository is still in an early stage. The implemented foundation is the typed model registry:
+This repository already includes the core model configuration layer:
 
 - `Tier` and `Status` enums
 - `ModelConfig` dataclass with validation
-- Decimal-based pricing validation for input/output cost
-- tests covering expected acceptable and invalid inputs
+- Decimal-based price validation for input and output costs
+- tests covering valid and invalid configuration inputs
 
-This is not yet a complete production router or API gateway, but it establishes the data model that the rest of the system can build on.
+This is the foundation on which a complete router can be built.
+
+## Project structure
+
+```text
+.
+├── README.md
+├── NOTES.md
+├── pyproject.toml
+├── src/
+│   └── switchyard/
+│       └── registry/
+│           └── models.py
+└── tests/
+    └── test_models.py
+```
 
 ## Installation
 
@@ -35,13 +50,13 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-If you want the test dependencies as well:
+To install the test dependencies as well:
 
 ```bash
 pip install -e ".[test]"
 ```
 
-## Example usage
+## Quick example
 
 ```python
 from datetime import date
@@ -65,54 +80,53 @@ print(config.model_id)
 print(config.tier)
 ```
 
-This example demonstrates the core model metadata the router will eventually consume.
-
-## Project structure
-
-```text
-.
-├── README.md
-├── NOTES.md
-├── pyproject.toml
-├── src/
-│   └── switchyard/
-│       └── registry/
-│           └── models.py
-└── tests/
-    └── test_models.py
-```
+This object represents the sort of metadata a routing layer will later use when deciding which model should handle a request.
 
 ## Validation and testing
 
-The repository includes unit tests for the validation rules around model configuration.
+The repository includes unit tests covering the configuration contract.
 
-Run them with:
+Run the test suite with:
 
 ```bash
 pytest
 ```
 
-The tests cover:
+The tests validate:
 
 - required string fields and blank values
-- enum validation for `Tier` and `Status`
-- negative and non-finite pricing values
-- positive context-window checks
-- type validation for model metadata
+- enum membership for `Tier` and `Status`
+- non-negative and finite price inputs
+- positive context windows
+- type correctness for model metadata
+
+## Design principles
+
+Switchyard is intentionally strict about data quality. Invalid model definitions fail early rather than causing downstream routing bugs.
+
+The system is designed around a few principles:
+
+- explicit model metadata
+- validation at construction time
+- cost transparency
+- provider-agnostic routing abstractions
+- future extensibility for budgets, quality gates, and observability
 
 ## Roadmap
 
-Planned work includes:
+The planned path for the project is:
 
-- YAML-backed model registry and loader
-- cost calculation utilities
-- routing logic by tier and task
-- provider integration and request execution
-- ledger and observability for request cost and latency
-- production-quality evaluation and escalation policies
+1. YAML-backed model registry and loader
+2. cost calculation utilities
+3. routing logic by tier and task type
+4. provider integration and request execution
+5. ledger and telemetry for request cost and latency
+6. evaluation, escalation, and quality-control workflows
+
+## Status
+
+This repository is currently in an early, foundational phase. The model registry is implemented and tested, but the full routing system, API surface, and production-grade observability stack are still ahead.
 
 ## Notes
 
-This repository is intentionally opinionated about correctness and data integrity. The config objects are validated at construction time so invalid model definitions fail early instead of slipping into routing logic.
-
-The project is best viewed as a foundation for an LLM cost autopilot and routing system rather than a finished application.
+A companion `NOTES.md` file captures the project’s design thinking, open decisions, and implementation learnings from the build process.
