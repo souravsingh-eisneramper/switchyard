@@ -1,0 +1,20 @@
+name: switchyard-python-ci
+on: ["push", "pull_request"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obtain Code
+        uses: actions/checkout@v7
+      - name: Setup python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '>=3.12'
+          cache: 'pip'
+      - name: Install Packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[test]
+      - name: Run tests
+        run: pytest
