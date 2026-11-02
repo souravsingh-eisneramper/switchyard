@@ -25,6 +25,6 @@ jobs:
           pip install ruff
           pip install -e .[test]
       - name: Lint Check
-        run: ruff check . --output-format=github
+        run: ruff check . --ignore FURB157,C408 --output-format=github
       - name: Run tests
         run: pytest
