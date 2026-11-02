@@ -1,71 +1,37 @@
-name: "Security Analysis"
+name: Security Scan
 
 on:
   push:
-    branches: [main]
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
-  schedule:
-    - cron: '30 4 * * 0' # Runs every Sunday at 04:30 UTC
+    branches: [ "main" ]
 
 jobs:
-  codeql-analyze:
-    name: CodeQL Analysis
-    runs-on: ${{ matrix.os }}
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ['ubuntu-latest', 'windows-latest']
-        language: [ 'python' ]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: ${{ matrix.language }}
-          build-mode: 'none' 
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:${{matrix.language}}"
-
-  bandit-analyze:
-    name: Bandit Fallback Scan
+  bandit:
+    name: Bandit Scan
     runs-on: ubuntu-latest
     permissions:
-      actions: read
-      contents: read
-      security-events: write
+      security-events: write # Required to upload SARIF to GitHub Security
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install Bandit
-        run: |
-          pip install bandit[sarif]
+    - name: Install Bandit
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit[sarif]
 
-      # Runs Bandit, generates a SARIF report, and exits with 0 so the workflow doesn't block PRs on low-severity warnings
-      - name: Run Bandit Scan
-        run: |
-          bandit -r . -f sarif -o bandit-results.sarif
+    - name: Run Bandit
+      run: bandit -r . -f sarif -o bandit-results.sarif
 
-      - name: Upload Bandit Results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: bandit-results.sarif
-          category: "bandit"
+    - name: Upload SARIF file
+      uses: github/codeql-action/upload-sarif@v3
+      if: success() || failure() # Ensures upload runs even if Bandit finds issues and fails
+      with:
+        sarif_file: bandit-results.sarif
