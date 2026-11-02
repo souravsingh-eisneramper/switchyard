@@ -1,79 +1,118 @@
 # Switchyard
 
-**An LLM cost autopilot.** Switchyard sits between your apps and your language models, sends each request to the cheapest model that can handle it, and measures exactly how much that saves.
+Switchyard is a Python project for building an LLM routing layer that can choose the best model for a task based on cost, quality, and latency. The codebase currently focuses on the model registry and validation layer that a router will eventually use.
 
-## Why
+The core idea is simple: keep model metadata, pricing, and validation in one place so application code can route by abstract tiers such as `tier1`, `tier2`, and `tier3` instead of hard-coding provider-specific model names.
 
-Most LLM spend goes to a single default model, even for tasks a smaller model handles equally well. Switchyard routes by task, checks the result, escalates only when needed, and reports savings against a fixed baseline.
+## Why Switchyard?
 
-## How it works
+Most LLM spending is driven by defaulting every request to a premium model, even when a smaller or cheaper model could handle the task. Switchyard is designed to make that tradeoff explicit and measurable.
 
-```
-App → Gateway (LiteLLM) → Router → Model tier → Quality check → Response
-                             │                        │
-                             └──── Cost ledger ◄──────┘
-```
+The project aims to support:
 
-| Tier | Typical use | Model |
-|---|---|---|
-| tier1 | Classification, extraction, reformatting | Claude Haiku 5.5 |
-| tier2 (baseline) | Writing, analysis, summarization, most coding | Claude Sonnet 5.5 |
-| tier3 | Multi-step reasoning, hard coding, high-stakes work | Claude Opus 5.5 |
+- cost-aware model routing
+- tier-based decision making
+- provider-agnostic model configuration
+- transparent pricing metadata
+- future expansion into routing policies and evaluation logic
 
-Apps request a tier alias (`tier1`, `tier2`, `tier3`), never a specific model. Models, prices, and providers live in config, so they can be swapped without touching app code.
+## Current state
 
-## Principles
+This repository is still in an early stage. The implemented foundation is the typed model registry:
 
-- **Measure first.** Log every request before routing any of them.
-- **Quality gates savings.** A cheaper model is promoted to a tier only after passing the golden-set eval.
-- **Models and prices are data.** Versioned in `policies/models.yaml`, with effective dates.
-- **Stay portable.** Multiple providers and channels, with failover.
-- **Honest accounting.** Escalations count toward cost, and 5% of traffic goes to the baseline as a control group.
+- `Tier` and `Status` enums
+- `ModelConfig` dataclass with validation
+- Decimal-based pricing validation for input/output cost
+- tests covering expected acceptable and invalid inputs
 
-## Decisions
+This is not yet a complete production router or API gateway, but it establishes the data model that the rest of the system can build on.
 
-- **Baseline model:** Claude Sonnet 5.5
-- **Task tags:** `extract`, `summarize`, `classify`, `draft`, `code`, `reason`
-- **Logging policy:** _[full | truncated | metadata only: decide before logging client data]_
-- **Savings per request:** baseline cost minus actual cost, including escalations
-
-## Ledger fields
-
-`request_id, timestamp, app, task_tag, model_served, tier, provider_channel, prompt_version, input_tokens, output_tokens, cached_tokens, actual_cost, baseline_cost, latency_ms, escalated, escalation_from, outcome, control_group`
-
-## Quick start
+## Installation
 
 ```bash
-cp .env.example .env        # add ANTHROPIC_API_KEY and LITELLM_MASTER_KEY
-docker compose up -d
-curl http://localhost:4000/v1/chat/completions \
-  -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"model":"tier2","messages":[{"role":"user","content":"Hello"}],
-       "metadata":{"tags":["summarize","app:test"]}}'
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
+
+If you want the test dependencies as well:
+
+```bash
+pip install -e ".[test]"
+```
+
+## Example usage
+
+```python
+from datetime import date
+from decimal import Decimal
+
+from switchyard.registry.models import ModelConfig, Status, Tier
+
+config = ModelConfig(
+    model_id="claude-haiku-5-5",
+    provider="anthropic",
+    tier=Tier.TIER1,
+    input_cost_per_million=Decimal("1.00"),
+    output_cost_per_million=Decimal("5.00"),
+    effective_date=date(2026, 11, 2),
+    baseline_flag=False,
+    status=Status.ACTIVE,
+    context_window=200_000,
+)
+
+print(config.model_id)
+print(config.tier)
+```
+
+This example demonstrates the core model metadata the router will eventually consume.
+
+## Project structure
+
+```text
+.
+├── README.md
+├── NOTES.md
+├── pyproject.toml
+├── src/
+│   └── switchyard/
+│       └── registry/
+│           └── models.py
+└── tests/
+    └── test_models.py
+```
+
+## Validation and testing
+
+The repository includes unit tests for the validation rules around model configuration.
+
+Run them with:
+
+```bash
+pytest
+```
+
+The tests cover:
+
+- required string fields and blank values
+- enum validation for `Tier` and `Status`
+- negative and non-finite pricing values
+- positive context-window checks
+- type validation for model metadata
 
 ## Roadmap
 
-- [ ] Phase 1: Gateway and cost ledger
-- [ ] Phase 2: Golden set and eval harness
-- [ ] Phase 3: Rules-based router
-- [ ] Phase 4: Quality checks, escalation, shadow mode
-- [ ] Phase 5: Canary rollout, budgets, alerts
-- [ ] Phase 6: Learned routing, caching, batching
+Planned work includes:
 
-## Repo layout
+- YAML-backed model registry and loader
+- cost calculation utilities
+- routing logic by tier and task
+- provider integration and request execution
+- ledger and observability for request cost and latency
+- production-quality evaluation and escalation policies
 
-```
-gateway/    LiteLLM config and middleware
-router/     classifier, policy engine, escalation
-policies/   routing.yaml, models.yaml, budgets.yaml
-eval/       golden sets, replay scripts, scorers
-ledger/     DB schema and cost calculations
-dashboards/ Grafana / Metabase exports
-tests/
-```
+## Notes
 
-## Status
+This repository is intentionally opinionated about correctness and data integrity. The config objects are validated at construction time so invalid model definitions fail early instead of slipping into routing logic.
 
-Early development. Phase 1 in progress.
+The project is best viewed as a foundation for an LLM cost autopilot and routing system rather than a finished application.
