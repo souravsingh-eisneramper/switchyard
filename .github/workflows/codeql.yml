@@ -57,12 +57,12 @@ jobs:
 
       - name: Install Bandit
         run: |
-          pip install bandit
+          pip install bandit[sarif]
 
       # Runs Bandit, generates a SARIF report, and exits with 0 so the workflow doesn't block PRs on low-severity warnings
       - name: Run Bandit Scan
         run: |
-          bandit -r . -f sarif -o bandit-results.sarif || true
+          bandit -r . -f sarif -o bandit-results.sarif
 
       - name: Upload Bandit Results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
