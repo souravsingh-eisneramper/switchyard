@@ -3,12 +3,13 @@ on: ["push", "pull_request"]
 
 jobs:
   test:
-    runs-on: [ubuntu-latest, windows-latest]
+    runs-on: ${{matrix.os}}
     
     strategy:
       # Set to false so one failing version doesn't cancel the remaining jobs
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest]
         python-version: ["3.12", "3.13", "3.14", "3.15"]
     steps:
       - name: Obtain Code
@@ -21,6 +22,9 @@ jobs:
       - name: Install Packages
         run: |
           python -m pip install --upgrade pip
+          pip install ruff
           pip install -e .[test]
+      - name: Lint Check
+        run: ruff check . --ignore FURB157,C408 --output-format=github
       - name: Run tests
         run: pytest
