@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "switchyard"
+
+version = "0.1.0"
+
+dependencies = [
+"pyyaml"
+]
+
+requires-python = ">=3.12"
+
+authors = [
+{name = "Sourav Singh"}
+]
+
+description = "A router to route queries and questions to appropriate model based on cost and latency"
+
+readme = "README.md"
+
+keywords = ["Artificial Intelligence", "Machine Learning", "AI", "Python", "Engineering"]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python",
+  "Intended Audience :: Developers"
+]
+
+[project.optional-dependencies]
+cli = [
+  "click",
+]
+
+test = [
+  "pytest"
+]
+
