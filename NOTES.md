@@ -68,6 +68,8 @@ request_id, timestamp, app, task_tag, model_served, tier, provider_channel, prom
 - **Open:** find out where `GITHUB_TOKEN` is set, since it may return in new terminals.
 - Never paste tokens anywhere. Never force-push to get past a rejected push.
 
+“TODO: move ruff ignores from the workflow into pyproject.toml, scoped to tests, with a reason
+
 ## To verify
 - Model IDs and prices at docs.claude.com (record the date checked)
 - What changed in setuptools 77.0.0 and whether it affects the `license` field
