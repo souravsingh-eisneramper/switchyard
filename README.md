@@ -1,6 +1,6 @@
 # Switchyard
 
-[![switchyard-python-ci](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/main.yml/badge.svg)](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/main.yml)
+[![switchyard-python-ci](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/main.yml/badge.svg)](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/main.yml)[![Security Scan](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/codeql.yml/badge.svg)](https://github.com/souravsingh-eisneramper/switchyard/actions/workflows/codeql.yml)
 
 Switchyard is a Python-based model routing foundation for LLM applications. It is designed to route requests to the most cost-effective model that can handle a given task while keeping pricing, routing decisions, and model metadata explicit and maintainable.
 
